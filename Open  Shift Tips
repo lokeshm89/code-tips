@@ -1,0 +1,13 @@
+Command to get the current CPU Usage of all pods, request and limits.
+oc get pods --all-namespaces -o json | \
+jq '.items[] as $pod | 
+{
+   name: $pod.metadata.name,
+   namespace: $pod.metadata.namespace,
+   requests: $pod.spec.containers[].resources.requests,
+   limits: $pod.spec.containers[].resources.limits
+}' | \
+while read -r pod; do
+  usage=$(oc adm top pod $(echo $pod | jq -r '.name') -n $(echo $pod | jq -r '.namespace') --containers --no-headers | awk '{print $2}')
+  echo $pod | jq --arg usage "$usage" '. | .cpu_usage = $usage'
+done
